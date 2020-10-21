@@ -4,8 +4,10 @@
 
 import requests
 import json
+import os
 
-filepath = '/Users/michaelsebring/Documents/resume folder/coding_challenges/tempus/Challenge_data_(1).vcf'
+
+filepath = 'Challenge_data_(1).vcf'
 
 
 #### test with pandas read
