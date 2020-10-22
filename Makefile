@@ -1,7 +1,7 @@
 # Makefile
 
 init:
-    pip install -r requirements.txt
+\tpip install -r requirements.txt
 
 run:
-    python3 tempus_challenge.py
+\tpython3 tempus_challenge.py
