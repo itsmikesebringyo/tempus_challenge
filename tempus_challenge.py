@@ -1,6 +1,6 @@
 # Mike Sebring
 # Tempus Coding Challenge
-# October 19, 2020
+# October 22, 2020
 
 # Import necessary modules.
 import requests
@@ -82,7 +82,28 @@ def multiple_type_split(info_attribute):
     return attirbute_split[0]
 
 
-######## Main Function ############
+## Helper function to get the most deleterious effect based on variant type.
+
+def get_variant_effect(variant_type):
+    """Takes variant type as input and returns the most deleterious effect."""
+
+    # Set up a mapping dictionary of variant types and their most deleterious effect.
+    mapping = {
+        'snp': 'nonsense',
+        'mnp': 'nonsense',
+        'ins': 'frameshift',
+        'del': 'frameshift',
+        'complex': 'frameshift'
+    }
+
+    # Get the variant effect and return the value.
+    variant_effect = mapping[variant_type]
+
+    return variant_effect
+
+
+##################################### Main Function ####################################
+
 def variant_annotator_main(vcf_path):
     """Reads in a VCF file and writes out an annotated variant file."""
 
@@ -98,7 +119,7 @@ def variant_annotator_main(vcf_path):
 
     output_df = pd.DataFrame(columns=col_list)
 
-    for i in range(500): ########## substitute in the length of the dataframe when finalized
+    for i in range(250): ########## substitute in the length of the dataframe when finalized
 
         # Create a dictionary out of the INFO column so the values
         # can be used to annotate the current variant.
@@ -123,8 +144,8 @@ def variant_annotator_main(vcf_path):
         else:
             variant_type = info_dict['TYPE']
         
-        # Variant effect TBD
-        variant_effect = -1
+        # Get the variant effect based on the type.
+        variant_effect = get_variant_effect(variant_type)
         
         # Depth of sequence coverage is found with the DP attribute
         coverage_depth = eval(info_dict['DP'])
@@ -150,6 +171,12 @@ def variant_annotator_main(vcf_path):
         
         allele_freq = get_allele_freq(variant_id, backup_AF)
 
+        # For additional information, let end consumer know the variant had multiple types.
+        if multiple_vals:
+            additional_info = 'multiple types'
+        else:
+            additional_info = ''
+
         # Create a new row to be appended to the output dataframe.
         new_row = {'variant_id': variant_id,
                    'variant_type': variant_type,
@@ -158,17 +185,16 @@ def variant_annotator_main(vcf_path):
                    'variant_reads': variant_reads,
                    'variant_percent': variant_percent,
                    'allele_frequency': allele_freq,
-                   'additional_info': -1}
+                   'additional_info': additional_info}
 
         # Append row to our output dataframe
         output_df = output_df.append(new_row, ignore_index=True)
 
-        # End of for-loop
+        # End of for-loop.
         
     dataframe_to_outfile(output_df, 'output_file.tsv')
 
     # End of main.
-
 
 
 variant_annotator_main(filepath)
