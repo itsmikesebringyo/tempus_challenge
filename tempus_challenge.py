@@ -106,7 +106,7 @@ def variant_annotator_main(vcf_path):
 
     output_df = pd.DataFrame(columns=col_list)
 
-    for i in range(1):
+    for i in range(len(variant_df)):
 
         # Create a dictionary out of the INFO column so the values
         # can be used to annotate the current variant.
