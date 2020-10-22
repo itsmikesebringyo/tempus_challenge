@@ -2,6 +2,7 @@
 # Tempus Coding Challenge
 # October 19, 2020
 
+# Import necessary modules.
 import requests
 import pandas as pd
 
@@ -10,6 +11,7 @@ filepath = 'Challenge_data_(1).vcf'
 
 
 ## Helper function.. read vcf file to pandas dataframe.
+
 def vcf_to_dataframe(filepath):
     """Takes a vcf filepath as input and returns a variant dataframe with a Variant ID column."""
     
@@ -20,19 +22,8 @@ def vcf_to_dataframe(filepath):
         f.seek(start+1)
         df1 = pd.read_csv(f, sep='\t')
 
-    # Next, create the variant ID column which we'll use to annotate.
-    df1['variant_id'] = df1.agg(lambda x: f"{x['CHROM']}-{x['POS']}-{x['REF']}-{x['ALT']}", axis=1)
-
     return df1
 
-# testing dataframe
-variant_dataframe = vcf_to_dataframe(filepath)
-
-variant_dataframe.columns
-variant_dataframe
-variant_dataframe['CHROM'][2]
-
-variant_dataframe['variant_id'][1000]
 
 ## Helper function to get allele frequency from ExAC API.
 
@@ -51,9 +42,6 @@ def get_allele_freq(variant_id, vcf_AF):
 
     return allele_frequency
 
-# testing ExAC API
-test_allele_freq = get_allele_freq(variant_dataframe['variant_id'][1000], 0.5)
-print(test_allele_freq)
 
 ## Helper function to create a dictionary of values from the INFO column.
 
@@ -69,19 +57,11 @@ def create_info_dict(info_col):
     info_dict = {}
     for pairing in info_split:
         key_val = pairing.split('=')
-        
-        # Include a try/except clause so that we can evaluate int and
-        # float variables but not error out on str. 
-        try:
-            info_dict[key_val[0]] = eval(key_val[1])
-        except:
-            info_dict[key_val[0]] = key_val[1]
+
+        info_dict[key_val[0]] = key_val[1]
 
     return info_dict
 
-# testing INFO dictionary
-info_dict = create_info_dict(variant_dataframe['INFO'][0])
-info_dict
 
 ## Helper function to create output file.
 
@@ -89,6 +69,18 @@ def dataframe_to_outfile(df1, outfile_name, delim='\t'):
     """Takes dataframe, filename, and delimiter as input and creates file."""
 
     df1.to_csv(outfile_name, sep=delim)
+
+
+## Helper function to split attributes in the instance where multiple types are given.
+
+def multiple_type_split(info_attribute):
+    """Takes variant attribute as input and returns first value."""
+
+    # Split the inputted attribute and return the first value.
+    attirbute_split = info_attribute.split(',')
+
+    return attirbute_split[0]
+
 
 ######## Main Function ############
 def variant_annotator_main(vcf_path):
@@ -100,36 +92,66 @@ def variant_annotator_main(vcf_path):
     # Now we need to iterate through each variant in the file, grab the 
     # necessary annotations, and append them to a new dataframe.
     
-    # Create new dataframe.
+    # Create output dataframe.
     col_list = ['variant_id', 'variant_type', 'variant_effect', 'coverage_depth', 'variant_reads', 
                 'variant_percent', 'allele_frequency', 'additional_info']
 
     output_df = pd.DataFrame(columns=col_list)
 
-    for i in range(len(variant_df)):
+    for i in range(500): ########## substitute in the length of the dataframe when finalized
 
         # Create a dictionary out of the INFO column so the values
         # can be used to annotate the current variant.
         info_dict = create_info_dict(variant_df['INFO'][i]) 
 
-        # Variant type is found with the TYPE attribute
-        variant_type = info_dict['TYPE']
+        # Next, we need to run a check to see if there are multiple types.
+        multiple_vals = False
+        if len(info_dict['TYPE'].split(',')) > 1:
+            multiple_vals = True
+
+        # Now create variant_id which will be used to annotate and call ExAC API.
+        # Use helper function to return first ALT allele if there are multiple.
+        if multiple_vals:
+            variant_id = "-".join([str(variant_df['CHROM'][i]), str(variant_df['POS'][i]), variant_df['REF'][i], multiple_type_split(variant_df['ALT'][i])])
+        else:
+            variant_id = "-".join([str(variant_df['CHROM'][i]), str(variant_df['POS'][i]), variant_df['REF'][i], variant_df['ALT'][i]])
+
+        # Variant type is found with the TYPE attribute. 
+        # Use helper function to return first value if there are multiple.
+        if multiple_vals:
+            variant_type = multiple_type_split(info_dict['TYPE'])
+        else:
+            variant_type = info_dict['TYPE']
+        
         # Variant effect TBD
         variant_effect = -1
+        
         # Depth of sequence coverage is found with the DP attribute
-        coverage_depth = info_dict['DP']
-        # Number of reads supporting variant is found with addition of SAF and SAR attributes
-        variant_reads = info_dict['SAF'] + info_dict['SAR']
+        coverage_depth = eval(info_dict['DP'])
+        
+        # Number of reads supporting variant is found with addition of SAF and SAR attributes.
+        # Use helper function to return the first value if there are multiple.
+        if multiple_vals:
+            variant_reads = eval(multiple_type_split(info_dict['SAF'])) + eval(multiple_type_split(info_dict['SAR']))
+        else:
+            variant_reads = eval(info_dict['SAF']) + eval(info_dict['SAR'])
+        
         # The percentage of reads supporting variant vs those supporting reference reads
         # can be found using the following calculation of attributes: (SAF + SAR) / (SAF + SAR + SRF + SRR)
-        variant_percent = (variant_reads) / (variant_reads + info_dict['SRF'] + info_dict['SRR'])
+        variant_percent = (variant_reads) / (variant_reads + eval(info_dict['SRF']) + eval(info_dict['SRR']))
         variant_percent = float(f"{variant_percent:.2f}")
+        
         # Get the allele frequency using our helper function. Use the estimated 
-        # alle frequency attribute (AF) as backup
-        allele_freq = get_allele_freq(variant_df['variant_id'][i], info_dict['AF'])
+        # allele frequency attribute (AF) as backup
+        if multiple_vals:
+            backup_AF = eval(multiple_type_split(info_dict['AF']))
+        else:
+            backup_AF = eval(info_dict['AF'])
+        
+        allele_freq = get_allele_freq(variant_id, backup_AF)
 
         # Create a new row to be appended to the output dataframe.
-        new_row = {'variant_id': variant_df['variant_id'][i],
+        new_row = {'variant_id': variant_id,
                    'variant_type': variant_type,
                    'variant_effect': variant_effect,
                    'coverage_depth': coverage_depth,
@@ -140,6 +162,8 @@ def variant_annotator_main(vcf_path):
 
         # Append row to our output dataframe
         output_df = output_df.append(new_row, ignore_index=True)
+
+        # End of for-loop
         
     dataframe_to_outfile(output_df, 'output_file.tsv')
 
