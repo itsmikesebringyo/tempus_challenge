@@ -1,5 +1,7 @@
 # Tempus Coding Challenge
 
+Link to repo: https://github.com/itsmikesebringyo/tempus_challenge
+
 The intent of this script is to ingest a VCF file and create an output file that annotates each variant from the input file. Each variant is annotated with the following information:
 
 1. The type of variation
