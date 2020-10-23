@@ -6,9 +6,8 @@
 import requests
 import pandas as pd
 
-
+# Set filepath for the input file.
 filepath = 'Challenge_data_(1).vcf'
-
 
 ## Helper function.. read vcf file to pandas dataframe.
 
@@ -119,7 +118,7 @@ def variant_annotator_main(vcf_path):
 
     output_df = pd.DataFrame(columns=col_list)
 
-    for i in range(250): ########## substitute in the length of the dataframe when finalized
+    for i in range(len(variant_df)): 
 
         # Create a dictionary out of the INFO column so the values
         # can be used to annotate the current variant.
@@ -195,6 +194,7 @@ def variant_annotator_main(vcf_path):
     dataframe_to_outfile(output_df, 'output_file.tsv')
 
     # End of main.
+
 
 
 variant_annotator_main(filepath)
