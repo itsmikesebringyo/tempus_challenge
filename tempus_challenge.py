@@ -124,24 +124,14 @@ def variant_annotator_main(vcf_path):
         # can be used to annotate the current variant.
         info_dict = create_info_dict(variant_df['INFO'][i]) 
 
-        # Next, we need to run a check to see if there are multiple types.
-        multiple_vals = False
-        if len(info_dict['TYPE'].split(',')) > 1:
-            multiple_vals = True
-
         # Now create variant_id which will be used to annotate and call ExAC API.
         # Use helper function to return first ALT allele if there are multiple.
-        if multiple_vals:
-            variant_id = "-".join([str(variant_df['CHROM'][i]), str(variant_df['POS'][i]), variant_df['REF'][i], multiple_type_split(variant_df['ALT'][i])])
-        else:
-            variant_id = "-".join([str(variant_df['CHROM'][i]), str(variant_df['POS'][i]), variant_df['REF'][i], variant_df['ALT'][i]])
+        variant_id = "-".join([str(variant_df['CHROM'][i]), str(variant_df['POS'][i]), variant_df['REF'][i], multiple_type_split(variant_df['ALT'][i])])
 
         # Variant type is found with the TYPE attribute. 
         # Use helper function to return first value if there are multiple.
-        if multiple_vals:
-            variant_type = multiple_type_split(info_dict['TYPE'])
-        else:
-            variant_type = info_dict['TYPE']
+        variant_type = multiple_type_split(info_dict['TYPE'])
+
         
         # Get the variant effect based on the type.
         variant_effect = get_variant_effect(variant_type)
@@ -151,10 +141,7 @@ def variant_annotator_main(vcf_path):
         
         # Number of reads supporting variant is found with addition of SAF and SAR attributes.
         # Use helper function to return the first value if there are multiple.
-        if multiple_vals:
-            variant_reads = eval(multiple_type_split(info_dict['SAF'])) + eval(multiple_type_split(info_dict['SAR']))
-        else:
-            variant_reads = eval(info_dict['SAF']) + eval(info_dict['SAR'])
+        variant_reads = eval(multiple_type_split(info_dict['SAF'])) + eval(multiple_type_split(info_dict['SAR']))
         
         # The percentage of reads supporting variant vs those supporting reference reads
         # can be found using the following calculation of attributes: (SAF + SAR) / (SAF + SAR + SRF + SRR)
@@ -163,18 +150,14 @@ def variant_annotator_main(vcf_path):
         
         # Get the allele frequency using our helper function. Use the estimated 
         # allele frequency attribute (AF) as backup
-        if multiple_vals:
-            backup_AF = eval(multiple_type_split(info_dict['AF']))
-        else:
-            backup_AF = eval(info_dict['AF'])
-        
+        backup_AF = eval(multiple_type_split(info_dict['AF']))
+
         allele_freq = get_allele_freq(variant_id, backup_AF)
 
         # For additional information, let end consumer know the variant had multiple types.
-        if multiple_vals:
+        additional_info = ''
+        if len(info_dict['TYPE'].split(',')) > 1:
             additional_info = 'multiple types'
-        else:
-            additional_info = ''
 
         # Create a new row to be appended to the output dataframe.
         new_row = {'variant_id': variant_id,
