@@ -196,5 +196,5 @@ def variant_annotator_main(vcf_path):
     # End of main.
 
 
-
-variant_annotator_main(filepath)
+if __name__ == "__main__":
+    variant_annotator_main(filepath)
