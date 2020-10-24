@@ -31,10 +31,8 @@ The main function starts by calling a helper function that reads in the VCF file
 
 Next, we start iterating through each row of the VCF dataframe and getting the annotations as we go. As we iterate through each variant, a dictionary is created from the INFO column since we are using several of the attributes from that column. Once we've created our dictionary, we check to see if there are multiple types for the current variant in the iteration. We use this knowledge along with the sixth assumption from above; if there are multiple types for the variant, we pull the first value of each attribute where multiple values are provided.
 
-The next step was to create the "variant_id". This served two purposes:
+The next step was to create the "variant_id". This served two purposes: first, it serves as the first column in the output file. Second, we use it to call the ExAC API. 
 
-It serves as the first column in the output file
-We use it to call the ExAC API
 From here, several more helper functions are called to get the variables needed for annotation. Once these variables are gathered, they are put into a dictionary and this dictionary is added as a new row to the output dataframe.
 
 After the input VCF dataframe has been completely iterated through and the annotations have been written to the output dataframe, the output dataframe is then written to an output file for the end consumer.
